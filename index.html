@@ -74,11 +74,21 @@
   .link.main .ic{background:rgba(255,255,255,.18)!important}
 
   .info{margin-top:26px;display:grid;gap:6px;font-size:13px;color:var(--muted)}
+  .lang{position:fixed;top:14px;right:16px;z-index:5;display:flex;gap:2px;padding:3px;border-radius:99px;
+    background:var(--card);border:1px solid var(--line);backdrop-filter:blur(12px);box-shadow:0 4px 14px rgba(60,40,10,.08)}
+  .lang button{font:700 12px Manrope,sans-serif;letter-spacing:.04em;color:var(--muted);background:none;border:0;
+    padding:6px 11px;border-radius:99px;cursor:pointer;transition:background .2s,color .2s}
+  .lang button[aria-pressed="true"]{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#fff}
+  .lang button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
   footer{margin-top:28px;font-size:12px;color:var(--muted);opacity:.8}
 </style>
 </head>
 <body>
 <div class="blob b1"></div><div class="blob b2"></div>
+
+<div class="lang" role="group" aria-label="Til / Язык / Language">
+  <button type="button" data-lang="uz">UZ</button><button type="button" data-lang="ru">RU</button><button type="button" data-lang="en">EN</button>
+</div>
 
 <main>
   <div class="avatar" id="avatar"></div>
@@ -95,17 +105,24 @@
    ========================================================== */
 const SITE = {
   name: "NUUR HOME COLLECTION",
-  tagline: "Uyingiz uchun nafis kolleksiya",
-  status: "Buyurtmalar qabul qilinmoqda",
+  // Matnlar 3 tilda: uz / ru / en
+  tagline: { uz:"Uyingiz uchun nafis kolleksiya", ru:"Изящная коллекция для вашего дома", en:"An elegant collection for your home" },
+  status:  { uz:"Buyurtmalar qabul qilinmoqda", ru:"Принимаем заказы", en:"Now taking orders" },
   logo: "logo.png",
   initials: "NH",
   links: [
-    { type:"catalog",   title:"Katalog",          sub:"Barcha mahsulotlar va narxlar", url:"https://catalog-acsessuar.vercel.app/", main:true },
-    { type:"instagram", title:"Instagram",        sub:"@nuur_home_collection",         url:"https://instagram.com/nuur_home_collection" },
-    { type:"telegram",  title:"Telegram kanal",   sub:"t.me/nuurhomecollection",       url:"https://t.me/nuurhomecollection" },
-    { type:"telegram",  title:"Telegram orqali buyurtma", sub:"@Mura1993",             url:"https://t.me/Mura1993" },
-    { type:"whatsapp",  title:"WhatsApp orqali buyurtma", sub:"+998 97 410 20 01",     url:"https://wa.me/998974102001" },
-    { type:"phone",     title:"Qo'ng'iroq qilish", sub:"+998 97 410 20 01",            url:"tel:+998974102001" },
+    { type:"catalog",   title:{ uz:"Katalog", ru:"Каталог", en:"Catalog" },
+      sub:{ uz:"Barcha mahsulotlar va narxlar", ru:"Все товары и цены", en:"All products and prices" },
+      url:"https://catalog-acsessuar.vercel.app/", main:true },
+    { type:"instagram", title:"Instagram", sub:"@nuur_home_collection", url:"https://instagram.com/nuur_home_collection" },
+    { type:"telegram",  title:{ uz:"Telegram kanal", ru:"Telegram-канал", en:"Telegram channel" },
+      sub:"t.me/nuurhomecollection", url:"https://t.me/nuurhomecollection" },
+    { type:"telegram",  title:{ uz:"Telegram orqali buyurtma", ru:"Заказать в Telegram", en:"Order via Telegram" },
+      sub:"@Mura1993", url:"https://t.me/Mura1993" },
+    { type:"whatsapp",  title:{ uz:"WhatsApp orqali buyurtma", ru:"Заказать в WhatsApp", en:"Order via WhatsApp" },
+      sub:"+998 97 410 20 01", url:"https://wa.me/998974102001" },
+    { type:"phone",     title:{ uz:"Qo'ng'iroq qilish", ru:"Позвонить", en:"Call us" },
+      sub:"+998 97 410 20 01", url:"tel:+998974102001" },
   ],
   info: [],
 };
@@ -124,23 +141,46 @@ const ICONS = {
 const svg = (vb, p) => `<svg viewBox="${vb}" fill="currentColor" aria-hidden="true"><path d="${p}"/></svg>`;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-document.title = SITE.name;
-document.getElementById('name').textContent = SITE.name;
-document.getElementById('tagline').textContent = SITE.tagline;
-document.getElementById('status').textContent = SITE.status;
-document.getElementById('avatar').innerHTML = SITE.logo
-  ? `<span class="logo" role="img" aria-label="${esc(SITE.name)}" style="background-image:url('${esc(SITE.logo)}')"></span>` : `<span>${esc(SITE.initials)}</span>`;
+const CHEV = svg('0 0 320 512', 'M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z');
+const LANGS = ["uz", "ru", "en"];
+const tr = (v, lang) => (v && typeof v === "object") ? (v[lang] || v.uz) : (v || "");
+let animated = false;
 
-document.getElementById('links').innerHTML = SITE.links.map((l, i) => {
-  const [color, vb, path] = ICONS[l.type] || ICONS.link;
-  const ext = /^https?:/.test(l.url) ? ' target="_blank" rel="noopener"' : '';
-  return `<a class="link${l.main ? ' main' : ''}" href="${esc(l.url)}"${ext} style="animation-delay:${i * 70}ms">
-    <span class="ic" style="background:${color}">${svg(vb, path)}</span>
-    <span class="txt"><b>${esc(l.title)}</b>${l.sub ? `<small>${esc(l.sub)}</small>` : ''}</span>
-    <span class="arrow">${svg('0 0 320 512', 'M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z')}</span></a>`;
-}).join('');
+function render(lang) {
+  document.documentElement.lang = lang;
+  document.title = SITE.name;
+  document.getElementById('name').textContent = SITE.name;
+  document.getElementById('tagline').textContent = tr(SITE.tagline, lang);
+  document.getElementById('status').textContent = tr(SITE.status, lang);
+  document.getElementById('avatar').innerHTML = SITE.logo
+    ? `<span class="logo" role="img" aria-label="${esc(SITE.name)}" style="background-image:url('${esc(SITE.logo)}')"></span>`
+    : `<span>${esc(SITE.initials)}</span>`;
+  document.getElementById('links').innerHTML = SITE.links.map((l, i) => {
+    const [color, vb, path] = ICONS[l.type] || ICONS.link;
+    const ext = /^https?:/.test(l.url) ? ' target="_blank" rel="noopener"' : '';
+    const sub = tr(l.sub, lang);
+    const anim = animated ? 'animation:none;opacity:1' : `animation-delay:${i * 70}ms`;
+    return `<a class="link${l.main ? ' main' : ''}" href="${esc(l.url)}"${ext} style="${anim}">
+      <span class="ic" style="background:${color}">${svg(vb, path)}</span>
+      <span class="txt"><b>${esc(tr(l.title, lang))}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span>
+      <span class="arrow">${CHEV}</span></a>`;
+  }).join('');
+  animated = true;
+  document.getElementById('footer').textContent = `© ${new Date().getFullYear()} ${SITE.name}`;
+  document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === lang));
+}
 
-document.getElementById('footer').textContent = `© ${new Date().getFullYear()} ${SITE.name}`;
+function pickLang() {
+  try { const s = localStorage.getItem('lang'); if (LANGS.includes(s)) return s; } catch (e) {}
+  const n = (navigator.language || '').slice(0, 2).toLowerCase();
+  return LANGS.includes(n) ? n : 'uz';
+}
+
+document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => {
+  try { localStorage.setItem('lang', b.dataset.lang); } catch (e) {}
+  render(b.dataset.lang);
+}));
+render(pickLang());
 </script>
 </body>
 </html>
